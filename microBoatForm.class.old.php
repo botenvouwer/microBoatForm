@@ -75,7 +75,7 @@
 	* 
 	**/
 	
-	class microBoatForm{
+	class Form{
 		
 		private $form = '';
 		private $load = false;

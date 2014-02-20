@@ -1,7 +1,7 @@
 <?php
 
 	/*
-		~microBoatForm.class 0.0.2
+		~microBoatForm.class 0.0.3
 		
 		Description,
 		
@@ -12,7 +12,7 @@
 
 	class microBoatForm{
 		
-		public $id = 'microBoatForm';
+		private $id = 'microBoatForm';
 		public $name = 'microBoatForm.class';
 		public $description = 'A form made by the microBoatForm.class';
 		public $submitType = 'post';
@@ -20,9 +20,67 @@
 		public $param = '';
 		public $buttonName = '';
 		public $multiple = false;
+		protected $order = 0;
+		
+		public $formParts = null;
+		public $formSubs = null;
+		
+		protected $errors = array();
+		public $debugMode = true;
 		
 		function __construct(){
 			$this->action = $_SERVER['PHP_SELF'];
+			$this->formParts = new microBoatFormParts();
+			$this->formSubs = new microBoatFormSubs();
+		}
+		
+		function setID($id){
+			if(!$id){
+				$this->error('Unable to set id. Please check the datatype.');
+			}
+			else{
+				$this->id = $id;
+				foreach($this->formParts as $object){
+					$object->id = $id;
+				}
+			}
+		}
+		
+		private function validateSubmitType($submitType){
+			$submitType = strtolower($submitType);
+			$prefix = 'mbfs_';
+			$class = $prefix.$submitType;
+			
+			if(class_exists($class)){
+				if(is_subclass_of($class, 'microBoatFormSubmit')){
+					return $class;
+				}
+				else{
+					$this->error("<i>$class</i> does not extend microBoatFormSubmit.", true);
+				}
+			}
+			else{
+				$this->error("Submit type: <i>$submitType</i> is not found.", true);
+			}
+		}
+		
+		private function validateElementType($elementType){
+			$elementType = strtolower($elementType);
+			$prefix = 'mbfe_';
+			$class = $prefix.$elementType;
+			
+			if(class_exists($class)){
+				if(is_subclass_of($class, 'microBoatFormElement')){
+					return $class;
+				}
+				else{
+					$this->error("<i>$class</i> does not extend microBoatFormElement.");
+					return false;
+				}
+			}
+			else{
+				$this->error("Submit type: <i>$elementType</i> is not found.");
+			}
 		}
 		
 		function loadFromFile($url){
@@ -32,14 +90,181 @@
 		}
 		
 		function loadFromArray($stack){
-			//laden form - array normalisatie maken
+			
+			if(isset($stack['header']['id'])){
+				$this->setID($stack['header']['id']);
+			}
+			
+			$this->name = (isset($stack['header']['name']) ? $stack['header']['name'] : '');
+			$this->description = (isset($stack['header']['']) ? $stack['header'][''] : '');
+			
+			if($stack['header']['submitType']){
+				if($this->validateSubmitType()){
+					$this->submitType = $stack['header']['submitType'];
+				}
+			}
+			
+			$this->action = (isset($stack['header']['action']) ? $stack['header']['action'] : '');
+			$this->param = (isset($stack['header']['param']) ? $stack['header']['param'] : '');
+			$this->buttonName = (isset($stack['header']['buttonName']) ? $stack['header']['buttonName'] : '');
+			
+			if(isset($stack['header']['multiple'])){
+				$this->multiple = (is_bool($stack['header']['multiple']) ? $stack['header']['multiple'] : false);
+			}
+			
+			if($this->multiple){
+				foreach($stack['header']['form'] as $array){
+					$this->addSub($array['header']);
+					foreach($array['form'] as $subarray){
+						$subarray['classname'] = $array['header']['classname'];
+						$this->addPart($subarray);
+					}
+				}
+			}
+			else{
+				foreach($stack['header']['form'] as $array){
+					$this->addPart($array);
+				}
+			}
 		}
 		
-		function addSub(){
+		function addSub($className = 'sub', $name = '', $description = ''){
+			$num = func_num_args();
+			
+			if(!$className){
+				$this->error('Specify a className for the sub like: addSub($className [, $name [,  $description]] or addSub($array)).');
+			}
+			
+			if($num == 1){
+				if(is_array($className)){
+					$stack = $className;
+					$className = (isset($stack['className']) ? $stack['className'] : '');
+					$name = (isset($stack['name']) ? $stack['name'] : '');
+					$description = (isset($stack['description']) ? $stack['description'] : '');
+					if(!$className){
+						$this->error('Specify a className for the sub like: addSub($className [, $name [,  $description]] or addSub($array)).');
+					}
+				}
+			}
+			
+			if(!is_string($className)){
+				$this->error('className for sub must be DataType String');
+			}
+			elseif(!preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/', $className)){
+				$this->error("<i>$className</i> is not a valid class name.");
+			}
+			else{
+				if(isset($this->formSubs->$className)){
+					$this->error("Sub <i>$className</i> already exist");
+				}
+				else{
+					$this->formSubs->$className = new microBoatFormSub($name, $description);
+				}
+			}
+		}
+		
+		function addPart($stack){
+			
+			if(is_array($stack)){
+				
+				if(!isset($stack['id'])){
+					$this->error('Can not create part becouse: id is not set.');
+				}
+				else if(!$stack['id']){
+					$this->error('Can not create part becouse: id is not set.');
+				}
+				else if(!is_string($stack['id'])){
+					$this->error('Can not create part becouse: id is not a string.');
+				}
+				else{
+					$check = substr($stack['id'], -2);
+					$className = ($check == '[]' ? substr_replace($stack['id'], "", -2) : $stack['id']);
+					$id = $stack['id'];
+					if(!preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/', $className)){
+						$this->error("Can not create part becouse: <i>$className</i> (id) is not a valid class name");
+						return;
+					}
+				}
+				
+				if(!isset($stack['type'])){
+					$type = 'text';
+				}
+				else if(!$stack['type']){
+					$type = 'text';
+				}
+				else if(!is_string($stack['type'])){
+					$type = 'text';
+				}
+				else{
+					if($elementType = $this->validateElementType($stack['type'])){
+						$type = $stack['type'];
+					}
+					else{
+						$this->error('Can not create part becouse: type is not valid.');
+						return;
+					}
+				}
+				
+				$name = (isset($stack['name']) ? $stack['name'] : '');
+				$description = (isset($stack['description']) ? $stack['description'] : '');
+				$required = (isset($stack['required']) ? $stack['required'] : false);
+				$value = (isset($stack['value']) ? $stack['value'] : '');
+				$disabled = (isset($stack['disabled']) ? $stack['disabled'] : false);
+				$placeholder = (isset($stack['placeholder']) ? $stack['placeholder'] : '');
+				$min = (isset($stack['min']) ? $stack['min'] : '');
+				$max = (isset($stack['max']) ? $stack['max'] : '');
+				$param = (isset($stack['param']) ? $stack['param'] : '');
+				$options = (isset($stack['options']) ? $stack['options'] : '');
+				$classNameSub = (isset($stack['classname']) ? $stack['classname'] : '');
+				
+				$reorder = false;
+				if(isset($stack['order'])){
+					if(is_numeric($stack['order'])){
+						$order = $stack['order'];
+						
+						if(($stack['order'] - 1) == $this->order){
+							$order = $this->order;
+							$this->order += 1;
+						}
+						else{
+							$order = $this->order;
+							$this->order += 1;
+							$reorder = true;
+						}
+					}
+					else{
+						$order = $this->order;
+						$this->order += 1;
+					}
+				}
+				else{
+					$order = $this->order;
+					$this->order += 1;
+				}
+				
+				if(isset($this->formParts->$className)){
+					$this->error("Can not create part becouse: formpart <i>$className</i> already exist.");
+					return;
+				}
+				else{
+					$this->formParts->$className = new $elementType($this->id, $id, $type, $name, $description, $required, $value, $disabled, $placeholder, $min, $max, $param, $classNameSub, $options, $order);
+				}
+				
+				if($reorder){
+					$this->reOrder($className, $stack['order']);
+				}
+				
+			}
+			else{
+				$this->error('Can not create part becouse: Fist agument must be datatype array.');
+			}
+		}
+		
+		public function reOrder(){
 			
 		}
 		
-		function addPart(){
+		private function prep(){
 			
 		}
 		
@@ -47,9 +272,66 @@
 			
 		}
 		
+		function parseJson(){
+			
+		}
+		
+		function saveFile(){
+			
+		}
+		
+		function isSend(){
+			
+		}
+		
 		function validate(){
 			
 		}
+		
+		private function error($message, $exit = false){
+			
+			$trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+			
+			$line = $trace[1]['line'];
+			$file = $trace[1]['file'];
+			
+			$mode = ($exit ? 'Fatal Error' : 'Notice');
+			$error = "<b>$mode</b>:  $message in <b>$file</b> on line <b>$line</b><br>";
+			$this->errors[] = $error;
+			if($this->debugMode){
+				echo (count($this->errors == 1) ? '<br>' : ''). $error;
+			}
+			
+			if($exit){
+				exit;
+			}
+		}
+		
+		function getErrors(){
+			return $this->errors;
+		}
+		
+	}
+	
+	#--------------------- Sub part class --------------------------------------------------------------------------------------------------------------------
+	
+	class microBoatFormSub{
+		
+		public $name;
+		public $description;
+		
+		function __construct($name, $description){
+			$this->name = (isset($name) ? $name : '');
+			$this->description = (isset($description) ? $description : '');
+		}
+		
+	}
+	
+	class microBoatFormParts{
+		
+	}
+	
+	class microBoatFormSubs{
 		
 	}
 	
@@ -157,7 +439,7 @@
 	
 	//Base
 	class microBoatFormElement{
-		protected $id = 0;
+		public $id = '';
 		public $formid = '';
 		public $name = '';
 		public $description = '';
@@ -170,24 +452,39 @@
 		protected $required = false;
 		protected $reqclass = '';
 		protected $star = '';
+		public $order = 0;
 		public $error = '';
+		public $options;
 		
-		function __construct($formid, $id, $name, $required, $description){
+		function __construct($formid ,$id, $type, $name, $description, $required, $value, $disabled, $placeholder, $min, $max, $param, $classNameSub, $options, $order){
 			$this->id = $id;
+			$this->type = $type;
 			$this->name = $name;
 			$this->required = $required;
 			$this->description = $description;
 			$this->formid = $formid;
+			$this->disabled = $disabled;
+			$this->placeholder = $placeholder;
+			$this->min = $min;
+			$this->max = $max;
+			$this->param = $param;
+			$this->childOfSub = $classNameSub;
+			$this->options = $options;
+			$this->order = $order;
 			
-			if($this->get_value()){
-				$this->value = 'value="'.$this->get_value().'"';
+			if($value){
+				$this->setValue($value);
+			}
+			
+			if($this->getValue()){
+				$this->value = 'value="'.$this->getValue().'"';
 			}
 			$this->setRequired($required);
 		}
 		
 		function validateMe(){
 			if($this->required){
-				if(!$this->get_value()){
+				if(!$this->getValue()){
 					$this->error = 'Vul '.$this->name.' in!';
 					return false;
 				}
@@ -223,16 +520,11 @@
 		}
 	}
 	
-	//Multipecoise base
-	class microBoatFormOptionsElement extends formElement{
+	//Multipecoise elements
+	class mbfe_selectbox extends microBoatFormElement{
 		
 		public $options;
 		protected $opt_html = '';
-		
-	}
-	
-	//Multipecoise elements
-	class mbfe_selectbox extends microBoatFormOptionsElement{
 		
 		function getHtml(){
 			
@@ -291,7 +583,10 @@
 		
 	}
 	
-	class mbfe_multiple extends microBoatFormOptionsElement{
+	class mbfe_multiple extends microBoatFormElement{
+		
+		public $options;
+		protected $opt_html = '';
 		
 		function getHtml(){
 			
@@ -340,7 +635,10 @@
 		
 	}
 	
-	class mbfe_checkbox extends microBoatFormOptionsElement{
+	class mbfe_checkbox extends microBoatFormElement{
+		
+		public $options;
+		protected $opt_html = '';
 		
 		function getHtml(){
 			
@@ -392,7 +690,10 @@
 		
 	}
 	
-	class mbfe_radiobox extends microBoatFormOptionsElement{
+	class mbfe_radiobox extends microBoatFormElement{
+		
+		public $options;
+		protected $opt_html = '';
 		
 		function getHtml(){
 			
