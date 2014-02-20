@@ -40,8 +40,8 @@
 			}
 			else{
 				$this->id = $id;
-				foreach($this->formParts as $object){
-					$object->id = $id;
+				foreach($this->formParts as $formPart){
+					$formPart->formid = $id;
 				}
 			}
 		}
@@ -251,7 +251,7 @@
 				}
 				
 				if($reorder){
-					$this->reOrder($className, $stack['order']);
+					$this->reOrder($id, $stack['order']);
 				}
 				
 			}
@@ -260,7 +260,30 @@
 			}
 		}
 		
-		public function reOrder(){
+		public function reOrder($id = '', $order = 0){
+			
+			if(!$id){
+				$this->error('Need id to re order.');
+				return;
+			}
+			
+			if(!is_numeric($order)){
+				$order = 0;
+			}	
+			
+			$num = count(get_object_vars($this->formParts)) - 1;
+			if($num < $order){
+				$order = $num;
+			}
+			
+			foreach($this->formParts as $formPart){
+				if($formPart->id == $id){
+					$formPart->order = $order;
+				}
+				else if($formPart->order >= $order){
+					$formPart->order += 1;
+				}
+			}
 			
 		}
 		

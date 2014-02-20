@@ -21,7 +21,17 @@
 	$formpart = array('id' => 'age', 'type' => 'number', 'name' => 'your age', 'required' => false, 'disabled' => false, 'classname' => 'names');
 	$form->addPart($formpart);
 	
-	$form->formParts->name->setRequired(true);
+	$formpart = array('id' => 'iets', 'type' => 'number', 'name' => 'your age', 'required' => false, 'disabled' => false, 'classname' => 'names');
+	$form->addPart($formpart);
+	
+	$formpart = array('id' => 'iets1', 'type' => 'number', 'name' => 'your age', 'required' => false, 'disabled' => false, 'classname' => 'names');
+	$form->addPart($formpart);
+	$formpart = array('id' => 'iets2', 'type' => 'number', 'name' => 'your age', 'required' => false, 'disabled' => false, 'classname' => 'names');
+	$form->addPart($formpart);
+	$formpart = array('id' => 'iets3', 'type' => 'number', 'name' => 'your age', 'required' => false, 'disabled' => false, 'classname' => 'names');
+	$form->addPart($formpart);
+	
+	$form->reOrder('age', 3);
 	
 	echo '<pre>';
 	print_r($form->formParts);
