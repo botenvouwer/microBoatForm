@@ -1,7 +1,7 @@
 <?php
 
 	/*
-		~microBoatForm.class 0.0.3
+		~microBoatForm.class 0.0.5
 		
 		Description,
 		
@@ -18,7 +18,7 @@
 		public $submitType = 'post';
 		public $action = '';
 		public $param = '';
-		public $buttonName = '';
+		public $buttonName = 'Send';
 		public $multiple = false;
 		protected $order = 0;
 		
@@ -291,7 +291,38 @@
 			
 		}
 		
-		function getHtml(){
+		function getHTML(){
+			
+			if($this->multiple){
+				
+			}
+			else{
+				
+				$formParts = array();
+				foreach($this->formParts as $formPart){
+					$formParts[$formPart->order] = $formPart->getHTML();
+				}
+				$formParts = implode($formParts, '');
+				$form = "
+					<div id='form_{$this->id}_div' class='generated_form'>
+						<fieldset class=''>
+							<legend class='form_legend'>$this->name</legend>
+							<p>$this->description <br>Velden met <span class='required_star'>*</span> zijn verplicht</p>
+							<table>$formParts</table>
+						</fieldset>
+					</div>
+				";
+			}
+			
+			$className = $this->validateSubmitType($this->submitType);
+			$formSubmit = new $className($this->id, $this->action, $this->param, $this->multiple, $form, $this->buttonName);
+			$form = $formSubmit->getHTML();
+			
+			return $form;
+			
+		}
+		
+		function validate(){
 			
 		}
 		
@@ -304,10 +335,6 @@
 		}
 		
 		function isSend(){
-			
-		}
-		
-		function validate(){
 			
 		}
 		
@@ -336,6 +363,18 @@
 		
 	}
 	
+	#--------------------- parts class --------------------------------------------------------------------------------------------------------------------
+	
+	class microBoatFormParts{
+		
+	}
+	
+	#--------------------- Subs class --------------------------------------------------------------------------------------------------------------------
+	
+	class microBoatFormSubs{
+		
+	}
+	
 	#--------------------- Sub part class --------------------------------------------------------------------------------------------------------------------
 	
 	class microBoatFormSub{
@@ -350,33 +389,20 @@
 		
 	}
 	
-	class microBoatFormParts{
-		
-	}
-	
-	class microBoatFormSubs{
-		
-	}
-	
 	#--------------------- Default Form Submits --------------------------------------------------------------------------------------------------------------
 	
 	//Base
 	class microBoatFormSubmit{
 		
-		public $id = '';
-		public $name = '';
-		public $description = '';
-		public $action = '';
-		public $param = '';
-		public $multiple = '';
-		public $form = '';
-		public $buttonName = '';
-		private $html = '';
+		protected $id = '';
+		protected $action = '';
+		protected $param = '';
+		protected $multiple = '';
+		protected $form = '';
+		protected $buttonName = '';
 		
-		function __construct($id, $name, $description, $action, $param, $multiple, $form, $buttonName){
+		function __construct($id, $action, $param, $multiple, $form, $buttonName){
 			$this->id = $id;
-			$this->name = $name;
-			$this->description = $description;
 			$this->action = $action;
 			$this->param = $param;
 			$this->multiple = $multiple;
@@ -384,23 +410,20 @@
 			$this->buttonName = $buttonName;
 		}
 		
-		function getHTML(){
-			return "
-				<form action='$this->action' method='post' id='$this->id'>
-					$this->form
-					<input sype='submit' value='$this->buttonName' />
-				</form>
-			";
-		}
 	}
 	
 	//Submits
 	class mbfs_post extends microBoatFormSubmit{
+		
+		function validate($formParts){
+			
+		}
+		
 		function getHTML(){
 			return "
 				<form action='$this->action' method='post' id='$this->id'>
 					$this->form
-					<input sype='submit' value='$this->buttonName' />
+					<input type='submit' value='$this->buttonName' />
 				</form>
 			";
 		}	
@@ -443,7 +466,11 @@
 					</script>
 				</form>
 			";
-		}	
+		}
+		
+		function validate(){
+			
+		}
 	}
 	
 	#Using this submit type requires the microBoat webapp.js
@@ -452,10 +479,14 @@
 			return "
 				<form id='$this->id'>
 					$this->form
-					<input sype='submit' value='$this->buttonName' action='$this->action' form='this' />
+					<input type='button' value='$this->buttonName' action='$this->action' form='this' />
 				</form>
 			";
-		}	
+		}
+		
+		function validate(){
+			
+		}
 	}
 	
 	#--------------------- Default Form Elements --------------------------------------------------------------------------------------------------------------
@@ -549,7 +580,7 @@
 		public $options;
 		protected $opt_html = '';
 		
-		function getHtml(){
+		function getHTML(){
 			
 			$this->opt_html .= "<option value='' ></option>";
 			foreach($this->options as $key => $option){
@@ -611,7 +642,7 @@
 		public $options;
 		protected $opt_html = '';
 		
-		function getHtml(){
+		function getHTML(){
 			
 			$array = $this->getValue();
 			foreach($this->options as $key => $option){
@@ -663,7 +694,7 @@
 		public $options;
 		protected $opt_html = '';
 		
-		function getHtml(){
+		function getHTML(){
 			
 			$array = $this->getValue();
 			foreach($this->options as $key => $option){
@@ -718,7 +749,7 @@
 		public $options;
 		protected $opt_html = '';
 		
-		function getHtml(){
+		function getHTML(){
 			
 			foreach($this->options as $key => $option){
 				$selected = '';
@@ -770,7 +801,7 @@
 	//Elements
 	class mbfe_text extends microBoatFormElement{
 		
-		function getHtml(){
+		function getHTML(){
 			
 			return "
 				<tr>
@@ -788,7 +819,7 @@
 	
 	class mbfe_number extends microBoatFormElement{
 		
-		function getHtml(){
+		function getHTML(){
 			
 			return "
 				<tr>
@@ -809,7 +840,7 @@
 	#dutch zipcode
 	class mbfe_postcode extends microBoatFormElement{
 		
-		function getHtml(){
+		function getHTML(){
 			
 			return "
 				<tr>
@@ -840,7 +871,7 @@
 	
 	class mbfe_adres extends microBoatFormElement{
 		
-		function getHtml(){
+		function getHTML(){
 			
 			return "
 				<tr>
@@ -871,7 +902,7 @@
 	
 	class mbfe_email extends microBoatFormElement{
 		
-		function getHtml(){
+		function getHTML(){
 			
 			return "
 				<tr>
@@ -902,7 +933,7 @@
 	
 	class mbfe_password extends microBoatFormElement{
 		
-		function getHtml(){
+		function getHTML(){
 			
 			return "
 				<tr>
@@ -928,7 +959,7 @@
 	
 	class mbfe_repeatpassword extends microBoatFormElement{
 		
-		function getHtml(){
+		function getHTML(){
 			
 			return "
 				<tr>
@@ -979,7 +1010,7 @@
 	
 	class mbfe_textbox extends microBoatFormElement{
 		
-		function getHtml(){
+		function getHTML(){
 			
 			return "
 				<tr>

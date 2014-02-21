@@ -14,7 +14,7 @@
 	*	
 	*	$form['headers'] = array('id' => 'thisform', 'type' => 2, 'action' => 'urltosend','level' => '', 'param' => '', 'name' => 'formname', 'description' => 'dit is een form', 'headers' => array(
 	*	
-	*	1 => array('subname', 'Fill this out top be awesome'),
+	*	1 => array('subname', 'Fill this out to be awesome'),
 	*	2 => array('subname2', 'Fill this in to')
 	*	 
 	*	));
