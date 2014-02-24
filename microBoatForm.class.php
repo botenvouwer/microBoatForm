@@ -1,7 +1,7 @@
 <?php
 
 	/*
-		~microBoatForm.class 0.0.7
+		~microBoatForm.class 0.1.0
 		
 		Description,
 		
@@ -45,6 +45,10 @@
 					$formPart->formid = $id;
 				}
 			}
+		}
+
+		function getID(){
+			return $this->id;
 		}
 		
 		private function validateSubmitType($submitType){
@@ -96,25 +100,25 @@
 				$this->setID($stack['header']['id']);
 			}
 			
-			$this->name = (isset($stack['header']['name']) ? $stack['header']['name'] : '');
-			$this->description = (isset($stack['header']['']) ? $stack['header'][''] : '');
+			$this->name = (isset($stack['header']['name']) ? $stack['header']['name'] : 'microBoatForm.class');
+			$this->description = (isset($stack['header']['description']) ? $stack['header']['description'] : 'A form made by the microBoatForm.class');
 			
-			if($stack['header']['submitType']){
-				if($this->validateSubmitType()){
-					$this->submitType = $stack['header']['submitType'];
+			if($stack['header']['submittype']){
+				if($this->validateSubmitType($stack['header']['submittype'])){
+					$this->submitType = $stack['header']['submittype'];
 				}
 			}
 			
-			$this->action = (isset($stack['header']['action']) ? $stack['header']['action'] : '');
+			$this->action = (isset($stack['header']['action']) ? $stack['header']['action'] : $_SERVER['PHP_SELF']);
 			$this->param = (isset($stack['header']['param']) ? $stack['header']['param'] : '');
-			$this->buttonName = (isset($stack['header']['buttonName']) ? $stack['header']['buttonName'] : '');
+			$this->buttonName = (isset($stack['header']['buttonName']) ? $stack['header']['buttonName'] : 'Send');
 			
 			if(isset($stack['header']['multiple'])){
 				$this->multiple = (is_bool($stack['header']['multiple']) ? $stack['header']['multiple'] : false);
 			}
 			
 			if($this->multiple){
-				foreach($stack['header']['form'] as $array){
+				foreach($stack['form'] as $array){
 					$this->addSub($array['header']);
 					foreach($array['form'] as $subarray){
 						$subarray['classname'] = $array['header']['classname'];
@@ -123,7 +127,7 @@
 				}
 			}
 			else{
-				foreach($stack['header']['form'] as $array){
+				foreach($stack['form'] as $array){
 					$this->addPart($array);
 				}
 			}
@@ -139,12 +143,12 @@
 			if($num == 1){
 				if(is_array($className)){
 					$stack = $className;
-					$className = (isset($stack['className']) ? $stack['className'] : '');
+					$className = (isset($stack['classname']) ? $stack['classname'] : '');
 					$name = (isset($stack['name']) ? $stack['name'] : '');
 					$description = (isset($stack['description']) ? $stack['description'] : '');
 					$order = (isset($stack['order']) ? $stack['order'] : 0);
 					if(!$className){
-						$this->error('Specify a className for the sub like: addSub($className [, $name [,  $description]] or addSub($array)).');
+						$this->error('Specify a className for the sub like: addSub($classname [, $name [,  $description]] or addSub($array)).');
 					}
 				}
 			}
@@ -208,7 +212,7 @@
 				}
 				else{
 					$check = substr($stack['id'], -2);
-					$className = ($check == '[]' ? substr_replace($stack['id'], "", -2) : $stack['id']);
+					$className = $stack['id'];
 					$id = $stack['id'];
 					if(!preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/', $className)){
 						$this->error("Can not create part becouse: <i>$className</i> (id) is not a valid class name");
@@ -290,7 +294,7 @@
 			}
 		}
 		
-		public function reOrder($className = '', $order = 0, $which = 'formParts'){
+		function reOrder($className = '', $order = 0, $which = 'formParts'){
 			
 			if(!$className){
 				$this->error('Need className to re order.');
@@ -373,6 +377,7 @@
 						$formSubs
 						$button
 					</div>
+					<input type='hidden' name='{$this->id}[isSend]' value='$this->param'>
 				";
 				
 			}
@@ -400,6 +405,7 @@
 							</table>
 						</fieldset>
 					</div>
+					<input type='hidden' name='{$this->id}[isSend]' value='$this->param'>
 				";
 			}
 			
@@ -411,20 +417,89 @@
 			
 		}
 		
-		function parseJson(){
+		function getJson(){
 			
+			$header = array(
+				'id' => $this->id,
+				'name' => $this->name,
+				'description' => $this->description,
+				'submittype' => $this->submitType,
+				'action' => $this->action,
+				'param' => $this->param,
+				'multiple' => $this->multiple,
+				'buttonname' => $this->buttonName,
+			);
+			
+			if($this->multiple){
+				
+			}
+			else{
+				$formParts = array();
+				foreach($this->formParts as $key => $formPart){
+					$formPartPre = array(
+						'id' => $formPart->id,
+						'type' => $formPart->type,
+						'name' => $formPart->name,
+						'description' => $formPart->description,
+						'order' => $formPart->order
+					);
+					
+					if($formPart->isRequired()){
+						$formPartPre['required'] = true;
+					}
+					else{
+						$formPartPre['required'] = false;
+					}
+					if($formPart->disabled){
+						$formPartPre['disabled'] = $formPart->disabled;
+					}
+					if($formPart->placeholder){
+						$formPartPre['placeholder'] = $formPart->placeholder;
+					}
+					if($formPart->min){
+						$formPartPre['min'] = $formPart->min;
+					}
+					if($formPart->max){
+						$formPartPre['max'] = $formPart->max;
+					}
+					if($formPart->param){
+						$formPartPre['param'] = $formPart->param;
+					}
+					if($formPart->getValue()){
+						$formPartPre['value'] = $formPart->getValue();
+					}
+					if($formPart->options){
+						$formPartPre['options'] = $formPart->options;
+					}
+					
+					$formParts[] = $formPartPre;
+				}
+				$form = array('header'=>$header, 'form'=>$formParts);
+			}
+			return json_encode($form, JSON_PRETTY_PRINT);
 		}
 		
-		function saveFile(){
-			
+		function saveFile($url){
+			$fh = fopen($url, 'w');
+			fwrite($fh, $this->getJson());
+			fclose($fh);
 		}
 		
 		function isSend(){
-			if(isset($_REQUEST["$this->id"])){
+			if(isset($_REQUEST[$this->id]['isSend'])){
 				return true;
 			}
 			else{
 				return false;
+			}
+		}
+		
+		function getData(){
+			if($this->isSend()){
+				return $_REQUEST[$this->id];
+			}
+			else{
+				$this->error('Can not get data becouse form is not send');
 			}
 		}
 		
@@ -539,6 +614,7 @@
 	//Base
 	class microBoatFormElement{
 		public $id = '';
+		public $type = '';
 		public $formid = '';
 		public $name = '';
 		public $description = '';
@@ -589,6 +665,10 @@
 				}
 			}
 			return true;
+		}
+		
+		function isRequired(){
+			return $this->required;
 		}
 		
 		function setRequired($bool){

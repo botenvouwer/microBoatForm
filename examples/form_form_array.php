@@ -74,7 +74,7 @@
 			'id' => 'myFrom',
 			'name' => 'My form',
 			'description' => 'This is an simple form',
-			'submitType' => 'post',
+			'submittype' => 'post',
 			'action' => './index.php',
 			'param' => '',
 			'multiple' => false,
@@ -137,15 +137,11 @@
 					),
 					array(
 						'id' => 'mbtype',
-						'type' => 'option',
+						'type' => 'radiobox',
 						'name' => 'Member type:',
 						'description' => 'Your age in years',
-						//'required' => false, //can not have required
 						'value' => '1', // Trooper
 						'disabled' => true,
-						//'placeholder' => '', // Can not have placeholder
-						//'min' => 3, // Can not have min
-						//'max' => 20, // Can not have max
 						'param' => '',
 						'options' => array('Darth lord','Stormtrooper','Imperial Pilot')
 					)
