@@ -1,7 +1,7 @@
 <?php
 
 	/*
-		~microBoatForm.class 0.1.1
+		~microBoatForm.class 0.1.2
 		
 		Description,
 		
@@ -882,7 +882,7 @@
 				if(!is_bool($this->getValue())){
 					$selected = ($this->getValue() == $key ? ' checked' : '' );
 				}
-				$this->opt_html .= "<li><input type='radio'$selected id='{$this->formid}_opt_$key' name='{$this->formid}[$this->id]' title='$this->description' class='{$this->formid}$this->reqclass' $this->reqclass  value='$key'> <label for='{$this->formid}_opt_$key' >$option</label></li>";
+				$this->opt_html .= "<li><input type='radio'$selected id='{$this->formid}_{$this->id}_opt_$key' name='{$this->formid}[$this->id]' title='$this->description' class='{$this->formid}$this->reqclass' $this->reqclass  value='$key'> <label for='{$this->formid}_{$this->id}_opt_$key' >$option</label></li>";
 			}
 			
 			return "

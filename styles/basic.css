@@ -6,6 +6,11 @@ div.microBoatForm{
 	font-family: Arial;
 }
 
+	div.microBoatForm span.required_star{
+		color: rgb(255, 0, 0);
+		margin: 0px 3px 0px 0px;
+	}
+
 	div.microBoatForm input{
 		
 	}

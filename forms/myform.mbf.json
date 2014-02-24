@@ -2,7 +2,7 @@
     "header": {
         "id": "myFrom",
         "name": "My form",
-        "description": "This is an simple form",
+        "description": "Vul alle vragen in!",
         "submittype": "post",
         "action": ".\/index.php",
         "param": "",
@@ -13,50 +13,51 @@
         {
             "id": "name",
             "type": "text",
-            "name": "Name",
-            "description": "Your firstname",
+            "name": "Naam",
+            "description": "Je voornaam",
             "order": 0,
-            "required": true,
-            "placeholder": "karel",
-            "min": 3,
-            "max": 20,
-            "value": "asdasd"
+            "required": true
         },
         {
             "id": "sirname",
             "type": "text",
-            "name": "Sirname",
-            "description": "Your sirname",
+            "name": "Achternaam",
+            "description": "Je achternaam",
             "order": 1,
-            "required": true,
-            "placeholder": "appel",
-            "min": 3,
-            "max": 20,
-            "value": "q"
+            "required": true
         },
         {
             "id": "age",
             "type": "number",
-            "name": "Age",
-            "description": "Your age in years",
+            "name": "Leeftijd",
+            "description": "Je leeftijd in jaren",
             "order": 2,
-            "required": false,
-            "placeholder": "karel",
-            "min": 3,
-            "max": 20
+            "required": false
         },
         {
-            "id": "mbtype",
+            "id": "vraag1",
             "type": "radiobox",
-            "name": "Member type",
-            "description": "Your age in years",
+            "name": "Wie is niet belangrijk",
+            "description": "Wie van de onderstaande personen is niet belangrijk.",
             "order": 3,
-            "required": false,
-            "value": "1",
+            "required": true,
             "options": [
-                "Darth lord",
-                "Stormtrooper",
-                "Imperial Pilot"
+                "Pipo Appel",
+                "Klaas Vaak",
+                "Kees Mees"
+            ]
+        },
+        {
+            "id": "vraag2",
+            "type": "radiobox",
+            "name": "Kies de juiste kleur",
+            "description": "",
+            "order": 4,
+            "required": true,
+            "options": [
+                "Rood",
+                "Blauw",
+                "Geel"
             ]
         }
     ]
