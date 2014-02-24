@@ -1,5 +1,7 @@
 <?php
-
+	
+	echo '<link rel="stylesheet" href="./styles/basic.css" type="text/css">';
+	
 	include('./microBoatForm.class.php');
 	
 	$form = new microBoatForm();

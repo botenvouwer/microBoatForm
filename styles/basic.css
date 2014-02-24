@@ -1,6 +1,9 @@
 /* basic */
 div.microBoatForm{
-	
+	padding: 0px;
+	margin: 0px;
+	width: 100%;
+	font-family: Arial;
 }
 
 	div.microBoatForm input{
@@ -12,7 +15,7 @@ div.microBoatForm{
 	}
 	
 	div.microBoatForm input[type=submit], div.microBoatForm input[type=button]{
-		
+		cursor: pointer;
 	}
 	
 	div.microBoatForm input[type=number]{
@@ -26,19 +29,22 @@ div.microBoatForm{
 /* simple form */
 
 div.microBoatForm fieldset.main{
-	
+	padding: 0px 10px 0px 20px;
+	margin: 10px 10px 10px 10px;
 }
 
 	div.microBoatForm legend.title{
-		
+		font-weight: bold;
+		font-style: italic;
+		font-size: 17px;
 	}
 	
 	div.microBoatForm p.description{
-		
+		margin: 7px 0px 0px 0px;
 	}
 	
 	div.microBoatForm table.main{
-		
+		margin: 10px 0px 10px 0px;
 	}
 	
 /* multiple form */

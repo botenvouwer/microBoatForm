@@ -1,7 +1,7 @@
 <?php
 
 	/*
-		~microBoatForm.class 0.1.0
+		~microBoatForm.class 0.1.1
 		
 		Description,
 		
