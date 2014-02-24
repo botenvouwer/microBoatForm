@@ -1,7 +1,7 @@
 <?php
 
 	/*
-		~microBoatForm.class 0.0.5
+		~microBoatForm.class 0.0.7
 		
 		Description,
 		
@@ -21,6 +21,7 @@
 		public $buttonName = 'Send';
 		public $multiple = false;
 		protected $order = 0;
+		protected $orderSubs = 0;
 		
 		public $formParts = null;
 		public $formSubs = null;
@@ -128,7 +129,7 @@
 			}
 		}
 		
-		function addSub($className = 'sub', $name = '', $description = ''){
+		function addSub($className = 'sub', $name = '', $description = '', $order = 0){
 			$num = func_num_args();
 			
 			if(!$className){
@@ -141,6 +142,7 @@
 					$className = (isset($stack['className']) ? $stack['className'] : '');
 					$name = (isset($stack['name']) ? $stack['name'] : '');
 					$description = (isset($stack['description']) ? $stack['description'] : '');
+					$order = (isset($stack['order']) ? $stack['order'] : 0);
 					if(!$className){
 						$this->error('Specify a className for the sub like: addSub($className [, $name [,  $description]] or addSub($array)).');
 					}
@@ -158,45 +160,36 @@
 					$this->error("Sub <i>$className</i> already exist");
 				}
 				else{
-					$this->formSubs->$className = new microBoatFormSub($name, $description);
-				}
-			}
-			
-			$reorder = false;
-			if(isset($stack['order'])){
-				if(is_numeric($stack['order'])){
-					$order = $stack['order'];
 					
-					if(($stack['order'] - 1) == $this->order){
-						$order = $this->order;
-						$this->order += 1;
+					$reorder = false;
+					if(isset($order)){
+						if(is_numeric($order)){
+							if(($order - 1) == $this->orderSubs){
+								$order = $this->orderSubs;
+								$this->orderSubs += 1;
+							}
+							else{
+								$order = $this->orderSubs;
+								$this->orderSubs += 1;
+								$reorder = true;
+							}
+						}
+						else{
+							$order = $this->orderSubs;
+							$this->orderSubs += 1;
+						}
 					}
 					else{
-						$order = $this->order;
-						$this->order += 1;
-						$reorder = true;
+						$order = $this->orderSubs;
+						$this->orderSubs += 1;
+					}
+					
+					$this->formSubs->$className = new microBoatFormSub($name, $description, $order);
+					
+					if($reorder){
+						$this->reOrder($className, $order, 'formSubs');
 					}
 				}
-				else{
-					$order = $this->order;
-					$this->order += 1;
-				}
-			}
-			else{
-				$order = $this->order;
-				$this->order += 1;
-			}
-			
-			if(isset($this->formSubs->$className)){
-				$this->error("Can not create part becouse: formpart <i>$className</i> already exist.");
-				return;
-			}
-			else{
-				$this->formSubs->$className = new $elementType($this->id, $id, $type, $name, $description, $required, $value, $disabled, $placeholder, $min, $max, $param, $classNameSub, $options, $order);
-			}
-			
-			if($reorder){
-				$this->reOrder($id, $stack['order'], 'formSubs');
 			}
 		}
 		
@@ -288,7 +281,7 @@
 				}
 				
 				if($reorder){
-					$this->reOrder($id, $stack['order'], 'formParts');
+					$this->reOrder($className, $stack['order'], 'formParts');
 				}
 				
 			}
@@ -297,10 +290,10 @@
 			}
 		}
 		
-		public function reOrder($id = '', $order = 0, $which){
+		public function reOrder($className = '', $order = 0, $which = 'formParts'){
 			
-			if(!$id){
-				$this->error('Need id to re order.');
+			if(!$className){
+				$this->error('Need className to re order.');
 				return;
 			}
 			
@@ -313,8 +306,8 @@
 				$order = $num;
 			}
 			
-			foreach($this->$which as $formPart){
-				if($formPart->id == $id){
+			foreach($this->$which as $key => $formPart){
+				if($key == $className){
 					$formPart->order = $order;
 				}
 				else if($formPart->order >= $order){
@@ -324,32 +317,80 @@
 			
 		}
 		
-		private function prep(){
-			
-		}
-		
 		function getHTML(){
+			
+			if(count(get_object_vars($this->formParts)) == 0){
+				$this->error('No form parts set can not create from without form parts!');
+			}
+			
+			$className = $this->validateSubmitType($this->submitType);
+			$formSubmit = new $className($this->id, $this->action, $this->param, $this->multiple, $this->buttonName);
+			$button = $formSubmit->getButton();
 			
 			if($this->multiple){
 				
+				if(count(get_object_vars($this->formSubs)) == 0){
+					$this->error('No form subs set can not create from without form subs in multiple mode!');
+				}
+				
+				$formSubParts = array();
+				foreach($this->formParts as $formPart){
+					$parent = $formPart->childOfSub;
+					if(!isset($formSubParts[$parent])){
+						$formSubParts[$parent] = array();
+					}
+					$formSubParts[$parent][] = $formPart;
+				}
+				
+				$formSubs = array();
+				foreach($this->formSubs as $key => $formSub){
+					$formParts = array();
+					foreach($formSubParts[$key] as $formPart){
+						$formParts[$formPart->order] = $formPart->getHTML();
+					}
+					ksort($formParts);
+					$formParts = implode($formParts, '');
+					$legend = ($formSub->name ? "<legend class='sub_title title'>$formSub->name</legend>" : '');
+					$description = ($formSub->description ? "<p class='sub_description description'>$formSub->description</p>" : '');
+					$formSubs[$formSub->order] = "
+						<fieldset class='main sub'>
+							$legend
+							$description
+							<table class='main sub'>
+								$formParts
+							</table>
+						</fieldset>
+					";
+				}
+				ksort($formSubs);
+				$formSubs = implode($formSubs, '');
+				$legend = ($this->name ? "<legend class='title'>$this->name</legend>" : '');
+				$description = ($this->description ? "<p class='description'>$this->description</p>" : '');
+				$form = "
+					<div id='{$this->id}_div' class='microBoatForm'>
+						$legend
+						$description
+						$formSubs
+						$button
+					</div>
+				";
+				
 			}
 			else{
-				
-				$className = $this->validateSubmitType($this->submitType);
-				$formSubmit = new $className($this->id, $this->action, $this->param, $this->multiple, $this->buttonName);
-				$button = $formSubmit->getButton();
-				
 				$formParts = array();
 				foreach($this->formParts as $formPart){
 					$formParts[$formPart->order] = $formPart->getHTML();
 				}
+				ksort($formParts);
 				$formParts = implode($formParts, '');
+				$legend = ($this->name ? "<legend class='title'>$this->name</legend>" : '');
+				$description = ($this->description ? "<p class='description'>$this->description</p>" : '');
 				$form = "
-					<div id='form_{$this->id}_div' class='generated_form'>
-						<fieldset class=''>
-							<legend class='form_legend'>$this->name</legend>
-							<p>$this->description <br>Velden met <span class='required_star'>*</span> zijn verplicht</p>
-							<table>
+					<div id='{$this->id}_div' class='microBoatForm'>
+						<fieldset class='main'>
+							$legend
+							$description
+							<table class='main'>
 								$formParts
 								<tr>
 									<td></td>
@@ -379,7 +420,7 @@
 		}
 		
 		function isSend(){
-			if(isset($_REQUEST["form_$this->id"])){
+			if(isset($_REQUEST["$this->id"])){
 				return true;
 			}
 			else{
@@ -432,9 +473,10 @@
 		public $description;
 		public $order = 0;
 		
-		function __construct($name, $description){
+		function __construct($name, $description, $order){
 			$this->name = (isset($name) ? $name : '');
 			$this->description = (isset($description) ? $description : '');
+			$this->order = (isset($order) ? $order : 0);
 		}
 		
 	}
@@ -563,8 +605,8 @@
 		}
 		
 		function getValue(){
-			if(isset($_REQUEST["form_{$this->formid}"][$this->id])){
-				return $_REQUEST["form_{$this->formid}"][$this->id];
+			if(isset($_REQUEST["{$this->formid}"][$this->id])){
+				return $_REQUEST["{$this->formid}"][$this->id];
 			}
 			else{
 				return false;
@@ -572,7 +614,7 @@
 		}
 		
 		function setValue($value){
-			$_REQUEST["form_{$this->formid}"][$this->id] = $value;
+			$_REQUEST["{$this->formid}"][$this->id] = $value;
 			$this->value = 'value="'.$value.'"';
 		}
 	}
@@ -593,8 +635,8 @@
 			
 			return "
 				<tr>
-					<td><label for='form_{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
-					<td><select id='form_{$this->formid}_$this->id' title='$this->description' class='form_{$this->formid}$this->reqclass' $this->reqclass name='form_{$this->formid}[$this->id]' >$this->opt_html</select></td>
+					<td><label for='{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
+					<td><select id='{$this->formid}_$this->id' title='$this->description' class='{$this->formid}$this->reqclass' $this->reqclass name='{$this->formid}[$this->id]' >$this->opt_html</select></td>
 					<td id='error_{$this->formid}_$this->id' class='error' >$this->error</td>
 				</tr>
 			";
@@ -604,9 +646,9 @@
 		}
 		
 		function getValue(){
-			if(isset($_REQUEST["form_{$this->formid}"][$this->id])){
-				if(isset($this->options[$_REQUEST["form_{$this->formid}"][$this->id]][1])){
-					return $this->options[$_REQUEST["form_{$this->formid}"][$this->id]][1];
+			if(isset($_REQUEST["{$this->formid}"][$this->id])){
+				if(isset($this->options[$_REQUEST["{$this->formid}"][$this->id]][1])){
+					return $this->options[$_REQUEST["{$this->formid}"][$this->id]][1];
 				}
 				else{
 					return false;
@@ -618,8 +660,8 @@
 		}	
 			
 		function getValue_key(){
-			if(isset($_REQUEST["form_{$this->formid}"][$this->id])){
-				return $_REQUEST["form_{$this->formid}"][$this->id];
+			if(isset($_REQUEST["{$this->formid}"][$this->id])){
+				return $_REQUEST["{$this->formid}"][$this->id];
 			}
 			else{
 				return false;
@@ -655,8 +697,8 @@
 			
 			return "
 				<tr>
-					<td><label for='form_{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
-					<td><select id='form_{$this->formid}_$this->id' title='$this->description' class='form_{$this->formid}$this->reqclass' $this->reqclass name='form_{$this->formid}[$this->id][]' multiple >$this->opt_html</select></td>
+					<td><label for='{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
+					<td><select id='{$this->formid}_$this->id' title='$this->description' class='{$this->formid}$this->reqclass' $this->reqclass name='{$this->formid}[$this->id][]' multiple >$this->opt_html</select></td>
 					<td id='error_{$this->formid}_$this->id' class='error' >$this->error</td>
 				</tr>
 			";
@@ -678,9 +720,9 @@
 		}
 		
 		function getValue(){
-			if(isset($_REQUEST["form_{$this->formid}"][$this->id])){
+			if(isset($_REQUEST["{$this->formid}"][$this->id])){
 				$array = array();
-				foreach($_REQUEST["form_{$this->formid}"][$this->id] as $key){
+				foreach($_REQUEST["{$this->formid}"][$this->id] as $key){
 					$array[$key] = $this->options[$key][1];
 				}
 				return $array;
@@ -702,7 +744,7 @@
 			$array = $this->getValue();
 			foreach($this->options as $key => $option){
 				$selected = (isset($array[$key]) ==  $key ? ' checked' : '' );
-				$this->opt_html .= "<li><input type='checkbox'$selected id='form_{$this->formid}_chek_$key' name='form_{$this->formid}[$this->id][]' title='$this->description' class='form_{$this->formid}$this->reqclass' $this->reqclass  value='$key'> <label for='form_{$this->formid}_chek_$key' >$option</label></li>";
+				$this->opt_html .= "<li><input type='checkbox'$selected id='{$this->formid}_chek_$key' name='{$this->formid}[$this->id][]' title='$this->description' class='{$this->formid}$this->reqclass' $this->reqclass  value='$key'> <label for='{$this->formid}_chek_$key' >$option</label></li>";
 			}
 			
 			return "
@@ -733,9 +775,9 @@
 		}
 		
 		function getValue(){
-			if(isset($_REQUEST["form_{$this->formid}"][$this->id])){
+			if(isset($_REQUEST["{$this->formid}"][$this->id])){
 				$array = array();
-				foreach($_REQUEST["form_{$this->formid}"][$this->id] as $key){
+				foreach($_REQUEST["{$this->formid}"][$this->id] as $key){
 					$array[$key] = $this->options[$key][1];
 				}
 				return $array;
@@ -760,7 +802,7 @@
 				if(!is_bool($this->getValue())){
 					$selected = ($this->getValue() == $key ? ' checked' : '' );
 				}
-				$this->opt_html .= "<li><input type='radio'$selected id='form_{$this->formid}_opt_$key' name='form_{$this->formid}[$this->id]' title='$this->description' class='form_{$this->formid}$this->reqclass' $this->reqclass  value='$key'> <label for='form_{$this->formid}_opt_$key' >$option</label></li>";
+				$this->opt_html .= "<li><input type='radio'$selected id='{$this->formid}_opt_$key' name='{$this->formid}[$this->id]' title='$this->description' class='{$this->formid}$this->reqclass' $this->reqclass  value='$key'> <label for='{$this->formid}_opt_$key' >$option</label></li>";
 			}
 			
 			return "
@@ -779,8 +821,8 @@
 		}
 		
 		function getValue(){
-			if(isset($_REQUEST["form_{$this->formid}"][$this->id])){
-				return $_REQUEST["form_{$this->formid}"][$this->id];
+			if(isset($_REQUEST["{$this->formid}"][$this->id])){
+				return $_REQUEST["{$this->formid}"][$this->id];
 			}
 			else{
 				return false;
@@ -808,8 +850,8 @@
 			
 			return "
 				<tr>
-					<td><label for='form_{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
-					<td><input id='form_{$this->formid}_$this->id' title='$this->description' type='text' class='form_{$this->formid}$this->reqclass' $this->reqclass name='form_{$this->formid}[$this->id]'$this->value /></td>
+					<td><label for='{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
+					<td><input id='{$this->formid}_$this->id' title='$this->description' type='text' class='{$this->formid}$this->reqclass' $this->reqclass name='{$this->formid}[$this->id]'$this->value /></td>
 					<td id='error_{$this->formid}_$this->id' class='error' >$this->error</td>
 				</tr>
 			";
@@ -826,8 +868,8 @@
 			
 			return "
 				<tr>
-					<td><label for='form_{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
-					<td><input id='form_{$this->formid}_$this->id' title='$this->description' type='number' class='form_{$this->formid}$this->reqclass' $this->reqclass name='form_{$this->formid}[$this->id]'$this->value /></td>
+					<td><label for='{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
+					<td><input id='{$this->formid}_$this->id' title='$this->description' type='number' class='{$this->formid}$this->reqclass' $this->reqclass name='{$this->formid}[$this->id]'$this->value /></td>
 					<td id='error_{$this->formid}_$this->id' class='error' >$this->error</td>
 				</tr>
 			";
@@ -847,8 +889,8 @@
 			
 			return "
 				<tr>
-					<td><label for='form_{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
-					<td><input id='form_{$this->formid}_$this->id' title='$this->description' type='text' class='form_{$this->formid}$this->reqclass' $this->reqclass maxlength='6' placeholder='8322RD' name='form_{$this->formid}[$this->id]'$this->value /></td>
+					<td><label for='{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
+					<td><input id='{$this->formid}_$this->id' title='$this->description' type='text' class='{$this->formid}$this->reqclass' $this->reqclass maxlength='6' placeholder='8322RD' name='{$this->formid}[$this->id]'$this->value /></td>
 					<td id='error_{$this->formid}_$this->id' class='error' >$this->error</td>
 				</tr>
 			";
@@ -878,8 +920,8 @@
 			
 			return "
 				<tr>
-					<td><label for='form_{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
-					<td><input id='form_{$this->formid}_$this->id' title='$this->description' type='text' class='form_{$this->formid}$this->reqclass' $this->reqclass maxlength='6' placeholder='8322RD' name='form_{$this->formid}[$this->id]'$this->value /></td>
+					<td><label for='{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
+					<td><input id='{$this->formid}_$this->id' title='$this->description' type='text' class='{$this->formid}$this->reqclass' $this->reqclass maxlength='6' placeholder='8322RD' name='{$this->formid}[$this->id]'$this->value /></td>
 					<td id='error_{$this->formid}_$this->id' class='error' >$this->error</td>
 				</tr>
 			";
@@ -909,8 +951,8 @@
 			
 			return "
 				<tr>
-					<td><label for='form_{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
-					<td><input id='form_{$this->formid}_$this->id' title='$this->description' type='email' class='form_{$this->formid}$this->reqclass' $this->reqclass maxlength='100' placeholder='kees@live.nl' name='form_{$this->formid}[$this->id]'$this->value /></td>
+					<td><label for='{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
+					<td><input id='{$this->formid}_$this->id' title='$this->description' type='email' class='{$this->formid}$this->reqclass' $this->reqclass maxlength='100' placeholder='kees@live.nl' name='{$this->formid}[$this->id]'$this->value /></td>
 					<td id='error_{$this->formid}_$this->id' class='error' >$this->error</td>
 				</tr>
 			";
@@ -940,8 +982,8 @@
 			
 			return "
 				<tr>
-					<td><label for='form_{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
-					<td><input id='form_{$this->formid}_$this->id' title='$this->description' type='password' class='form_{$this->formid}$this->reqclass' $this->reqclass maxlength='30' placeholder='*****' name='form_{$this->formid}[$this->id]'$this->value /></td>
+					<td><label for='{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
+					<td><input id='{$this->formid}_$this->id' title='$this->description' type='password' class='{$this->formid}$this->reqclass' $this->reqclass maxlength='30' placeholder='*****' name='{$this->formid}[$this->id]'$this->value /></td>
 					<td id='error_{$this->formid}_$this->id' class='error' >$this->error</td>
 				</tr>
 			";
@@ -966,13 +1008,13 @@
 			
 			return "
 				<tr>
-					<td><label for='form_{$this->formid}_{$this->id}_1' title='$this->description' >{$this->star}{$this->name}:</label></td>
-					<td><input id='form_{$this->formid}_{$this->id}_1' title='$this->description' type='password' class='form_{$this->formid}$this->reqclass' $this->reqclass maxlength='30' placeholder='*****' name='form_{$this->formid}[{$this->id}_1]'$this->value /></td>
+					<td><label for='{$this->formid}_{$this->id}_1' title='$this->description' >{$this->star}{$this->name}:</label></td>
+					<td><input id='{$this->formid}_{$this->id}_1' title='$this->description' type='password' class='{$this->formid}$this->reqclass' $this->reqclass maxlength='30' placeholder='*****' name='{$this->formid}[{$this->id}_1]'$this->value /></td>
 					<td id='error_{$this->formid}_$this->id' class='error' >$this->error</td>
 				</tr>
 				<tr>
-					<td><label for='form_{$this->formid}_{$this->id}_2' title='$this->description' >{$this->star}Herhaal {$this->name}:</label></td>
-					<td><input id='form_{$this->formid}_{$this->id}_2' title='$this->description' type='password' class='form_{$this->formid}$this->reqclass' $this->reqclass maxlength='30' placeholder='*****' name='form_{$this->formid}[{$this->id}_2]'$this->value /></td>
+					<td><label for='{$this->formid}_{$this->id}_2' title='$this->description' >{$this->star}Herhaal {$this->name}:</label></td>
+					<td><input id='{$this->formid}_{$this->id}_2' title='$this->description' type='password' class='{$this->formid}$this->reqclass' $this->reqclass maxlength='30' placeholder='*****' name='{$this->formid}[{$this->id}_2]'$this->value /></td>
 					<td></td>
 				</tr>
 			";
@@ -982,8 +1024,8 @@
 		}
 		
 		function get_value(){
-			if(isset($_REQUEST["form_{$this->formid}"][$this->id.'_1'])){
-				return $_REQUEST["form_{$this->formid}"][$this->id.'_1'];
+			if(isset($_REQUEST["{$this->formid}"][$this->id.'_1'])){
+				return $_REQUEST["{$this->formid}"][$this->id.'_1'];
 			}
 			else{
 				return false;
@@ -997,11 +1039,11 @@
 				$this->error = 'Vul '.$this->name.' in';
 				return false;	
 			}
-			elseif(!$_REQUEST["form_{$this->formid}"][$this->id.'_2']){
+			elseif(!$_REQUEST["{$this->formid}"][$this->id.'_2']){
 				$this->error = 'Herhaal '.$this->name;
 				return false;	
 			}
-			elseif($this->get_value() != $_REQUEST["form_{$this->formid}"][$this->id.'_2']){
+			elseif($this->get_value() != $_REQUEST["{$this->formid}"][$this->id.'_2']){
 				$this->error = $this->name . ' komt niet overeen';
 				return false;
 			}
@@ -1017,12 +1059,12 @@
 			
 			return "
 				<tr>
-					<td><label for='form_{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
+					<td><label for='{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
 					<td colspan='2' id='error_{$this->formid}_$this->id' class='error' >$this->error</td>
 				</tr>
 				<tr>
 					<td></td>
-					<td colspan='2' ><textarea id='form_{$this->formid}_$this->id' title='$this->description' class='form_{$this->formid}$this->reqclass' $this->reqclass maxlength='500' placeholder='' name='form_{$this->formid}[$this->id]' >$this->value</textarea></td>
+					<td colspan='2' ><textarea id='{$this->formid}_$this->id' title='$this->description' class='{$this->formid}$this->reqclass' $this->reqclass maxlength='500' placeholder='' name='{$this->formid}[$this->id]' >$this->value</textarea></td>
 				</tr>
 			";
 			

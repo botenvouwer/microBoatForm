@@ -1,0 +1,45 @@
+/* basic */
+div.microBoatForm{
+	
+}
+
+	div.microBoatForm input{
+		
+	}
+	
+	div.microBoatForm input[type=text]{
+		
+	}
+	
+	div.microBoatForm input[type=submit], div.microBoatForm input[type=button]{
+		
+	}
+	
+	div.microBoatForm input[type=number]{
+		
+	}
+	
+	div.microBoatForm input[type=radio]{
+		
+	}
+
+/* simple form */
+
+div.microBoatForm fieldset.main{
+	
+}
+
+	div.microBoatForm legend.title{
+		
+	}
+	
+	div.microBoatForm p.description{
+		
+	}
+	
+	div.microBoatForm table.main{
+		
+	}
+	
+/* multiple form */
+	
