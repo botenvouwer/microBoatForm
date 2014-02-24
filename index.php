@@ -30,6 +30,10 @@
 	
 	$form->reOrder('age', 3);
 	
+	if($form->isSend()){
+		echo "yesyesyes <br>";
+	}
+	
 	echo $form->getHTML();
 	
 	/*
