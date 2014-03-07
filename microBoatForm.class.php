@@ -328,7 +328,7 @@
 			}
 			
 			$className = $this->validateSubmitType($this->submitType);
-			$formSubmit = new $className($this->id, $this->action, $this->param, $this->multiple, $this->buttonName);
+			$formSubmit = new $className($this);
 			$button = $formSubmit->getButton();
 			
 			if($this->multiple){
@@ -414,6 +414,17 @@
 		}
 		
 		function validate(){
+			
+			$submit = $this->validateSubmitType($this->submitType);
+			
+			$submit = new $submit($this);
+			
+			$gonogo = true;
+			foreach($this->formParts as $part){
+				if(!$part->validate()){
+					$gonogo = false;
+				}
+			}
 			
 		}
 		
@@ -561,18 +572,10 @@
 	//Base
 	class microBoatFormSubmit{
 		
-		protected $id = '';
-		protected $action = '';
-		protected $param = '';
-		protected $multiple = '';
-		protected $buttonName = '';
+		private $parent = '';
 		
-		function __construct($id, $action, $param, $multiple, $buttonName){
-			$this->id = $id;
-			$this->action = $action;
-			$this->param = $param;
-			$this->multiple = $multiple;
-			$this->buttonName = $buttonName;
+		function __construct($parent){
+			$this->parent = $parent;
 		}
 		
 	}
@@ -580,28 +583,44 @@
 	//Submits
 	class mbfs_post extends microBoatFormSubmit{
 		
-		function validate($formParts){
+		function validate(){
 			
 		}
 		
 		function getButton(){
-			return "<input type='submit' value='$this->buttonName' />";
+			return "<input type='submit' value='{$this->parent->buttonName}' />";
 		}
 		
 		function getHTML($form){
-			return "<form action='$this->action' method='post' id='$this->id'>$form</form>";
+			return "<form action='$this->parent->action' method='post' id='$this->parent->id'>$form</form>";
 		}	
 	}
 	
 	#Using this submit type requires the microBoat webapp.js
 	class mbfs_webapp extends microBoatFormSubmit{
 		
-		function validate($formParts){
+		function validate($errors){
 			
 		}
 		
 		function getButton(){
-			return "<input type='button' value='$this->buttonName' action='$this->action' form='this' />";
+			return "<input type='button' value='$this->buttonName' action='$this->action' param='$this->param' form='this' />";
+		}
+		
+		function getHTML($form){
+			return "<form id='$this->id'>$form</form>";
+		}
+	}
+	
+	#Using this submit type requires the old microBoat webapp.js
+	class mbfs_webapp_old extends microBoatFormSubmit{
+		
+		function validate($errors){
+			
+		}
+		
+		function getButton(){
+			return "<input type='button' value='$this->buttonName' action='$this->action' level='$this->param' form='#$this->id' />";
 		}
 		
 		function getHTML($form){
