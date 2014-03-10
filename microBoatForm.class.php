@@ -1,7 +1,7 @@
 <?php
 
 	/*
-		~microBoatForm.class 0.1.2
+		~microBoatForm.class 0.1.3
 		
 		Description,
 		
@@ -421,10 +421,12 @@
 			
 			$gonogo = true;
 			foreach($this->formParts as $part){
-				if(!$part->validate()){
+				if(!$part->validateMe()){
 					$gonogo = false;
 				}
 			}
+			
+			return $submit->validate($gonogo);
 			
 		}
 		
@@ -572,7 +574,7 @@
 	//Base
 	class microBoatFormSubmit{
 		
-		private $parent = '';
+		protected $parent = '';
 		
 		function __construct($parent){
 			$this->parent = $parent;
@@ -583,8 +585,8 @@
 	//Submits
 	class mbfs_post extends microBoatFormSubmit{
 		
-		function validate(){
-			
+		function validate($gonogo){
+			return $gonogo;
 		}
 		
 		function getButton(){
@@ -592,15 +594,20 @@
 		}
 		
 		function getHTML($form){
-			return "<form action='$this->parent->action' method='post' id='$this->parent->id'>$form</form>";
+			$id = $this->parent->getID();
+			return "<form action='{$this->parent->action}' method='post' id='$id'>$form</form>";
 		}	
 	}
 	
 	#Using this submit type requires the microBoat webapp.js
 	class mbfs_webapp extends microBoatFormSubmit{
 		
-		function validate($errors){
-			
+		function validate($gonogo){
+			$formParts = $this->parent->formParts;
+			foreach($formParts as $part){
+				echo "<load query='#error_{$this->parent->id}_$part->id'>$part->error</load>";
+				$part->error = '';
+			}
 		}
 		
 		function getButton(){
@@ -615,8 +622,12 @@
 	#Using this submit type requires the old microBoat webapp.js
 	class mbfs_webapp_old extends microBoatFormSubmit{
 		
-		function validate($errors){
-			
+		function validate($gonogo){
+			$formParts = $this->parent->formParts;
+			foreach($formParts as $part){
+				echo "<load id='#error_{$this->parent->id}_$part->id'>$part->error</load>";
+				$part->error = '';
+			}
 		}
 		
 		function getButton(){
@@ -843,7 +854,7 @@
 			$array = $this->getValue();
 			foreach($this->options as $key => $option){
 				$selected = (isset($array[$key]) ==  $key ? ' checked' : '' );
-				$this->opt_html .= "<li><input type='checkbox'$selected id='{$this->formid}_chek_$key' name='{$this->formid}[$this->id][]' title='$this->description' class='{$this->formid}$this->reqclass' $this->reqclass  value='$key'> <label for='{$this->formid}_chek_$key' >$option</label></li>";
+				$this->opt_html .= "<li><input type='checkbox'$selected id='{$this->formid}_chek_$key' name='{$this->formid}[$this->id][]' title='$this->description' class='{$this->formid}$this->reqclass' value='$key'> <label for='{$this->formid}_chek_$key' >$option</label></li>";
 			}
 			
 			return "
@@ -931,9 +942,13 @@
 		function validateMe(){
 			
 			if($this->required){
-				if(!$this->getValue()){
+				if(!isset($_REQUEST["{$this->formid}"][$this->id])){
 					$this->error = 'Selecteer één van de opties';
-					return false;	
+					return false;
+				}
+				elseif(strlen($this->getValue()) == 0){
+					$this->error = 'Selecteer één van de opties';
+					return false;
 				}
 			}
 			return true;
@@ -977,7 +992,19 @@
 			
 		}
 		
-		//todo chekc for int
+		function validateMe(){
+			if(!parent::validateMe()){
+				return false;	
+			}
+			
+			if($this->isRequired() || strlen($this->getValue()) != 0){
+				if(!is_numeric($this->getValue())){
+					$this->error = 'Dit moet een getal zijn';
+					return false;	
+				}
+			}
+			return true;
+		}
 		
 	}
 	
@@ -1003,7 +1030,7 @@
 				return false;	
 			}
 			
-			if(!preg_match("#^[0-9]{4}\s?[a-z]{2}$#i", $this->get_value())){
+			if(!preg_match("#^[0-9]{4}\s?[a-z]{2}$#i", $this->getValue())){
 				$this->error = 'Dit is geen postcode';
 				return false;	
 			}
@@ -1020,7 +1047,7 @@
 			return "
 				<tr>
 					<td><label for='{$this->formid}_$this->id' title='$this->description' >{$this->star}{$this->name}:</label></td>
-					<td><input id='{$this->formid}_$this->id' title='$this->description' type='text' class='{$this->formid}$this->reqclass' $this->reqclass maxlength='6' placeholder='8322RD' name='{$this->formid}[$this->id]'$this->value /></td>
+					<td><input id='{$this->formid}_$this->id' title='$this->description' type='text' class='{$this->formid}$this->reqclass' $this->reqclass placeholder='8322RD' name='{$this->formid}[$this->id]'$this->value /></td>
 					<td id='error_{$this->formid}_$this->id' class='error' >$this->error</td>
 				</tr>
 			";
@@ -1034,7 +1061,7 @@
 				return false;	
 			}
 			
-			if(!preg_match("/^([a-z ]{3,}) ([0-9]{1,})([a-z]*)$/i", $this->get_value())){
+			if(!preg_match("/^([a-z ]{3,}) ([0-9]{1,})([a-z]*)$/i", $this->getValue())){
 				$this->error = 'Dit is geen adres';
 				return false;	
 			}
@@ -1065,7 +1092,7 @@
 				return false;	
 			}
 			
-			if(!filter_var($this->get_value(), FILTER_VALIDATE_EMAIL)){
+			if(!filter_var($this->getValue(), FILTER_VALIDATE_EMAIL)){
 				$this->error = 'Onjuist email adres';
 				return false;	
 			}
@@ -1122,7 +1149,7 @@
 			
 		}
 		
-		function get_value(){
+		function getValue(){
 			if(isset($_REQUEST["{$this->formid}"][$this->id.'_1'])){
 				return $_REQUEST["{$this->formid}"][$this->id.'_1'];
 			}
@@ -1134,7 +1161,7 @@
 		function validateMe(){
 			
 			
-			if(!$this->get_value()){
+			if(!$this->getValue()){
 				$this->error = 'Vul '.$this->name.' in';
 				return false;	
 			}
@@ -1142,7 +1169,7 @@
 				$this->error = 'Herhaal '.$this->name;
 				return false;	
 			}
-			elseif($this->get_value() != $_REQUEST["{$this->formid}"][$this->id.'_2']){
+			elseif($this->getValue() != $_REQUEST["{$this->formid}"][$this->id.'_2']){
 				$this->error = $this->name . ' komt niet overeen';
 				return false;
 			}

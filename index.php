@@ -1,3 +1,4 @@
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
 <?php
 	
 	echo '<link rel="stylesheet" href="./styles/basic.css" type="text/css">';
@@ -9,11 +10,12 @@
 	$form->loadFromFile('./forms/myform.json');
 	
 	if($form->isSend()){
-		$test = print_r($form->getData(), true);
-		echo "Verzonden <br><pre>$test</pre><br>";
+		if($form->validate()){
+			$test = print_r($form->getData(), true);
+			echo "Verzonden en gevalideert <br><pre>$test</pre><br>";
+		}
 	}
 	
-	echo $form->saveFile('./forms/myform.mbf.json');
 	echo $form->getHTML();
 	
 	/*

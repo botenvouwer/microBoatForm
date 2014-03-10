@@ -22,7 +22,7 @@
             "type": "text",
             "name": "Achternaam",
             "description": "Je achternaam",
-            "required": true
+            "required": false
         },
         {
             "id": "age",
@@ -44,14 +44,69 @@
         },
         {
             "id": "vraag2",
-            "type": "radiobox",
-            "name": "Kies de juiste kleur",
+            "type": "selectbox",
+            "name": "test",
+            "description": "test",
             "required": true,
             "options": [
-                "Rood",
-                "Blauw",
-                "Geel"
+                "Pipo Appel",
+                "Klaas Vaak",
+                "Kees Mees"
             ]
+        },
+        {
+            "id": "vraag3",
+            "type": "multiple",
+            "name": "Wie is niet belangrijk",
+            "description": "Wie van de onderstaande personen is niet belangrijk.",
+            "required": true,
+            "options": [
+                "Pipo Appel",
+                "Klaas Vaak",
+                "Kees Mees"
+            ]
+        },
+        {
+            "id": "vraag4",
+            "type": "checkbox",
+            "name": "deze",
+            "description": "Wie van de onderstaande personen is niet belangrijk.",
+            "required": true,
+            "options": [
+                "Pipo Appel",
+                "Klaas Vaak",
+                "Kees Mees"
+            ]
+        },
+        {
+            "id": "postcode",
+            "type": "postcode",
+            "name": "postcode",
+            "required": true
+        },
+        {
+            "id": "adres",
+            "type": "adres",
+            "name": "adres",
+            "required": true
+        },
+        {
+            "id": "textbox",
+            "type": "textbox",
+            "name": "textbox",
+            "required": true
+        },
+        {
+            "id": "repeatpassword",
+            "type": "repeatpassword",
+            "name": "repeatpassword",
+            "required": true
+        },
+        {
+            "id": "email",
+            "type": "email",
+            "name": "email",
+            "required": true
         }
     ]
 }
