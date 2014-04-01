@@ -90,8 +90,12 @@
 		
 		function loadFromFile($url){
 			$file = file_get_contents($url);
-			$file = json_decode($file, true);
-			$this->loadFromArray($file);
+			$this->loadFromJson($file);
+		}
+		
+		function loadFromJson($json){
+			$array = json_decode($json, true);
+			$this->loadFromArray($array);
 		}
 		
 		function loadFromArray($stack){
