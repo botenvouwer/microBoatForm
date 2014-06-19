@@ -731,6 +731,16 @@
 			$_REQUEST["{$this->formid}"][$this->id] = $value;
 			$this->value = 'value="'.$value.'"';
 		}
+		
+		
+		function value($value = null){
+			if($value){
+				$this->setValue($value);
+			}
+			else{
+				return $this->getValue();
+			}
+		}
 	}
 	
 	//Multipecoise elements
